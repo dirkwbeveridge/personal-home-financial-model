@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Home Affordability Model</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e0f13;
+    --surface: #16181f;
+    --surface2: #1e2029;
+    --panel-left: #1c1f28;
+    --border: #2a2d38;
+    --accent: #c5a96e;
+    --accent2: #7eb8a4;
+    --accent3: #e07b6b;
+    --text: #e8e6df;
+    --muted: #7a7d8a;
+    --green: #6dbf8c;
+    --red: #e07b6b;
+    --yellow: #c5a96e;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    min-height: 100vh;
+  }
+  .header {
+    padding: 28px 36px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    flex-wrap: wrap;
+    background: var(--bg);
+  }
+
+  .header h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 26px;
+    color: var(--text);
+  }
+  .header-sub {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .layout {
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    min-height: calc(100vh - 73px);
+  }
+  .panel-left {
+    border-right: 1px solid var(--border);
+    padding: 24px 20px;
+    overflow-y: auto;
+    background: var(--panel-left);
+  }
+  .section-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 14px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+  .input-group { margin-bottom: 16px; }
+  .input-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+  .input-label span { font-size: 12px; color: var(--text); font-weight: 500; }
+  .input-label .val {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--accent);
+    font-weight: 500;
+  }
+  input[type="range"] {
+    width: 100%;
+    -webkit-appearance: none;
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    border: 2px solid var(--bg);
+    transition: transform 0.1s;
+  }
+  input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.3); }
+  .select-row { display: flex; gap: 6px; margin-bottom: 16px; }
+  .select-btn {
+    flex: 1;
+    padding: 7px 4px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--muted);
+    border-radius: 5px;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 11px;
+    font-weight: 500;
+    text-align: center;
+    transition: all 0.15s;
+  }
+  .select-btn:hover { border-color: var(--muted); color: var(--text); }
+  .select-btn.active { border-color: var(--accent); background: rgba(197,169,110,0.12); color: var(--accent); }
+  .section-spacer { margin-top: 24px; }
+  .static-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--muted);
+    padding: 3px 0;
+    margin-bottom: 4px;
+  }
+  .static-row span:last-child { font-family: 'DM Mono', monospace; color: var(--text); }
+  .panel-right { padding: 24px 28px; overflow-y: auto; }
+  .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+  .kpi-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    position: relative;
+    overflow: hidden;
+  }
+  .kpi-stripe {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--accent);
+  }
+  .kpi-label { font-size: 10px; font-family: 'DM Mono', monospace; letter-spacing: 0.8px; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+  .kpi-value { font-family: 'DM Serif Display', serif; font-size: 22px; color: var(--text); line-height: 1; }
+  .kpi-value.green { color: var(--green); }
+  .kpi-value.red { color: var(--red); }
+  .kpi-value.yellow { color: var(--yellow); }
+  .kpi-sub { font-size: 11px; color: var(--muted); margin-top: 4px; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+  }
+  .card-title { font-size: 10px; font-family: 'DM Mono', monospace; letter-spacing: 0.8px; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
+  .dp-row { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; font-size: 12px; border-bottom: 1px solid var(--border); }
+  .dp-row:last-child { border-bottom: none; }
+  .dp-row .lbl { color: var(--muted); }
+  .dp-row .amt { font-family: 'DM Mono', monospace; color: var(--text); }
+  .dp-row.total .lbl { color: var(--text); font-weight: 600; }
+  .dp-row.total .amt { color: var(--accent); font-weight: 600; }
+  .bt-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 12px; border-bottom: 1px dashed var(--border); }
+  .bt-row:last-child { border-bottom: none; }
+  .bt-row .lbl { color: var(--muted); }
+  .bt-row .amt { font-family: 'DM Mono', monospace; }
+  .bt-row.total { padding-top: 8px; }
+  .bt-row.total .lbl { color: var(--text); font-weight: 600; }
+  .bt-row.total .amt { color: var(--accent); font-size: 14px; font-weight: 600; }
+  .gauge-section { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+  .gauge-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+  .gauge-title { font-size: 10px; font-family: 'DM Mono', monospace; letter-spacing: 0.8px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+  .bar-container { height: 8px; background: var(--border); border-radius: 4px; margin: 6px 0; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 4px; transition: width 0.3s ease; }
+  .bar-fill.safe { background: var(--green); }
+  .bar-fill.warn { background: var(--yellow); }
+  .bar-fill.danger { background: var(--red); }
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    font-family: 'DM Mono', monospace;
+    margin-bottom: 16px;
+  }
+  .status-badge.ready { background: rgba(109,191,140,0.15); color: var(--green); border: 1px solid rgba(109,191,140,0.3); }
+  .status-badge.caution { background: rgba(197,169,110,0.15); color: var(--yellow); border: 1px solid rgba(197,169,110,0.3); }
+  .status-badge.blocked { background: rgba(224,123,107,0.15); color: var(--red); border: 1px solid rgba(224,123,107,0.3); }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+  .timeline-section { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+  .tl-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+  .tl-label { font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; width: 45px; text-align: right; flex-shrink: 0; }
+  .tl-bar-wrap { flex: 1; height: 20px; background: var(--border); border-radius: 3px; overflow: visible; position: relative; }
+  .tl-bar-fill { height: 100%; border-radius: 3px; transition: width 0.3s ease; }
+  .tl-val { font-family: 'DM Mono', monospace; font-size: 11px; width: 90px; flex-shrink: 0; }
+  .notes-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .note-item { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; font-size: 11px; color: var(--muted); line-height: 1.5; }
+  .note-item strong { color: var(--text); display: block; margin-bottom: 2px; font-size: 11px; }
+  .divider { height: 1px; background: var(--border); margin: 20px 0; }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>Home Affordability Model</h1>
+  <span class="header-sub">The Beveridges · March 2026</span>
+</div>
+
+<div class="layout">
+  <div class="panel-left">
+    <div class="section-label">Target Market</div>
+    <div class="select-row" id="market-selector">
+      <button class="select-btn active" onclick="setMarket('mv',this)">Mill Valley, CA</button>
+      <button class="select-btn" onclick="setMarket('lf',this)">Lake Forest, IL</button>
+    </div>
+
+    <div class="section-label" style="margin-top:4px;">Loan Type</div>
+    <div class="select-row" id="loan-selector">
+      <button class="select-btn active" onclick="setLoan('30',this)">30yr Fixed</button>
+      <button class="select-btn" onclick="setLoan('15',this)">15yr Fixed</button>
+      <button class="select-btn" onclick="setLoan('arm',this)">7/1 ARM</button>
+    </div>
+
+    <div class="section-spacer"></div>
+    <div class="section-label">New Home</div>
+    <div class="input-group">
+      <div class="input-label"><span>Purchase Price</span><span class="val" id="lbl-price">$2,000,000</span></div>
+      <input type="range" id="sl-price" min="800000" max="5000000" step="50000" value="2000000" oninput="update()">
+    </div>
+    <div class="input-group">
+      <div class="input-label"><span>Mortgage Rate (%)</span><span class="val" id="lbl-rate">6.40%</span></div>
+      <input type="range" id="sl-rate" min="4.5" max="9.0" step="0.05" value="6.4" oninput="update()">
+    </div>
+    <div class="input-group">
+      <div class="input-label"><span>Down Payment %</span><span class="val" id="lbl-dpPct">20%</span></div>
+      <input type="range" id="sl-dpPct" min="5" max="50" step="1" value="20" oninput="update()">
+    </div>
+
+    <div class="section-spacer"></div>
+    <div class="section-label">Evergreen, CO Sale</div>
+    <div class="input-group">
+      <div class="input-label"><span>Estimated Sale Price</span><span class="val" id="lbl-cosale">$660,000</span></div>
+      <input type="range" id="sl-cosale" min="450000" max="1000000" step="10000" value="660000" oninput="update()">
+    </div>
+    <div class="input-group">
+      <div class="input-label"><span>Selling Costs %</span><span class="val" id="lbl-sellcost">8.0%</span></div>
+      <input type="range" id="sl-sellcost" min="4" max="12" step="0.25" value="8.0" oninput="update()">
+    </div>
+    <div class="static-row"><span>Mortgage Payoff at close</span><span id="lbl-payoff">—</span></div>
+
+    <div class="section-spacer"></div>
+    <div class="section-label">HYSA &amp; Timeline</div>
+    <div class="static-row"><span>HYSA seed balance</span><span>$12,000</span></div>
+    <div class="static-row"><span>Monthly deposit</span><span>$2,000</span></div>
+    <div class="static-row"><span>APY</span><span>3.20%</span></div>
+    <div class="static-row" style="margin-bottom:10px;"><span>HYSA value at close</span><span id="lbl-hysa">—</span></div>
+    <div class="static-row"><span>Foley contribution (fixed)</span><span>$100,000</span></div>
+    <div class="input-group" style="margin-top:8px;">
+      <div class="input-label"><span>Additional Cash at Purchase</span><span class="val" id="lbl-savings">$0</span></div>
+      <input type="range" id="sl-savings" min="0" max="500000" step="5000" value="0" oninput="update()">
+    </div>
+    <div class="input-group">
+      <div class="input-label"><span>Other Monthly Savings</span><span class="val" id="lbl-monthly">$0</span></div>
+      <input type="range" id="sl-monthly" min="0" max="30000" step="500" value="0" oninput="update()">
+    </div>
+    <div class="input-group">
+      <div class="input-label"><span>Months Until Close</span><span class="val" id="lbl-months">12 mo</span></div>
+      <input type="range" id="sl-months" min="3" max="36" step="1" value="12" oninput="update()">
+    </div>
+
+    <div class="section-spacer"></div>
+    <div class="section-label">Income &amp; Debt</div>
+    <div class="input-group">
+      <div class="input-label"><span>Combined Annual Income</span><span class="val" id="lbl-income">$600,000</span></div>
+      <input type="range" id="sl-income" min="200000" max="1000000" step="10000" value="600000" oninput="update()">
+    </div>
+    <div class="input-group">
+      <div class="input-label"><span>Other Monthly Debt</span><span class="val" id="lbl-debt">$0</span></div>
+      <input type="range" id="sl-debt" min="0" max="10000" step="100" value="0" oninput="update()">
+    </div>
+  </div>
+
+  <div class="panel-right">
+    <div id="status-badge" class="status-badge ready"><span class="dot"></span><span id="status-text">—</span></div>
+
+    <div class="kpi-row">
+      <div class="kpi-card">
+        <div class="kpi-stripe" id="stripe-dp"></div>
+        <div class="kpi-label">Down Payment</div>
+        <div class="kpi-value" id="kpi-dp">—</div>
+        <div class="kpi-sub" id="kpi-dpSub">—</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-stripe" id="stripe-cash"></div>
+        <div class="kpi-label">Cash After Purchase</div>
+        <div class="kpi-value" id="kpi-cash">—</div>
+        <div class="kpi-sub" id="kpi-cashSub">after DP &amp; closing costs</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-stripe" id="stripe-pi"></div>
+        <div class="kpi-label">Total Monthly Payment</div>
+        <div class="kpi-value" id="kpi-pi">—</div>
+        <div class="kpi-sub" id="kpi-piSub">—</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-stripe" id="stripe-dti"></div>
+        <div class="kpi-label">Back-End DTI</div>
+        <div class="kpi-value" id="kpi-dti">—</div>
+        <div class="kpi-sub" id="kpi-dtiSub">—</div>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div class="card">
+        <div class="card-title">Down Payment Sources</div>
+        <div class="dp-row"><span class="lbl">Foley contribution</span><span class="amt">$100,000</span></div>
+        <div class="dp-row"><span class="lbl">Additional cash at purchase</span><span class="amt" id="dp-cash">—</span></div>
+        <div class="dp-row"><span class="lbl">HYSA at close (<span id="dp-mo-lbl">12mo</span>)</span><span class="amt" id="dp-hysa">—</span></div>
+        <div class="dp-row"><span class="lbl">Other addl savings (<span id="dp-mo-lbl2">12mo</span>)</span><span class="amt" id="dp-addl">—</span></div>
+        <div class="dp-row"><span class="lbl">CO Gross Proceeds</span><span class="amt" id="dp-gross">—</span></div>
+        <div class="dp-row"><span class="lbl">Less: Selling Costs</span><span class="amt" id="dp-sellcosts" style="color:var(--red)">—</span></div>
+        <div class="dp-row"><span class="lbl">Less: Mortgage Payoff</span><span class="amt" id="dp-payoff-amt" style="color:var(--red)">—</span></div>
+        <div class="dp-row total"><span class="lbl">Total Available</span><span class="amt" id="dp-total">—</span></div>
+        <div class="dp-row"><span class="lbl">Less: Down Payment</span><span class="amt" id="dp-used">—</span></div>
+        <div class="dp-row"><span class="lbl">Less: Buyer Closing Costs (3%)</span><span class="amt" id="dp-buyercosts" style="color:var(--red)">—</span></div>
+        <div class="dp-row"><span class="lbl">Reserve After DP &amp; Closing</span><span class="amt" id="dp-reserve">—</span></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Monthly Cost Breakdown</div>
+        <div class="bt-row"><span class="lbl">Principal &amp; Interest</span><span class="amt" id="bt-pi">—</span></div>
+        <div class="bt-row"><span class="lbl">Property Tax</span><span class="amt" id="bt-tax">—</span></div>
+        <div class="bt-row"><span class="lbl">Home Insurance</span><span class="amt" id="bt-ins">—</span></div>
+        <div class="bt-row"><span class="lbl" id="pmi-label">PMI</span><span class="amt" id="bt-pmi">—</span></div>
+        <div class="bt-row"><span class="lbl">Other Debt</span><span class="amt" id="bt-debt">—</span></div>
+        <div class="bt-row total"><span class="lbl">Total Monthly</span><span class="amt" id="bt-total">—</span></div>
+      </div>
+    </div>
+
+    <div class="gauge-section">
+      <div class="gauge-card">
+        <div class="gauge-title">Debt-to-Income Ratio</div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted)">
+          <span>Front-end (housing only)</span>
+          <span id="g-fe" style="font-family:'DM Mono',monospace;color:var(--text)">—</span>
+        </div>
+        <div class="bar-container"><div class="bar-fill" id="g-fe-bar" style="width:0%"></div></div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:6px">
+          <span>Back-end (all debt)</span>
+          <span id="g-be" style="font-family:'DM Mono',monospace;color:var(--text)">—</span>
+        </div>
+        <div class="bar-container"><div class="bar-fill" id="g-be-bar" style="width:0%"></div></div>
+        <div style="font-size:10px;color:var(--muted);margin-top:6px;font-family:'DM Mono',monospace">Guideline: ≤28% front / ≤43% back</div>
+        <div style="margin-top:12px;border-top:1px dashed var(--border);padding-top:10px;">
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted)">
+            <span>Monthly income available post-PITI</span>
+            <span id="g-leftover" style="font-family:'DM Mono',monospace;color:var(--text)">—</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="gauge-card">
+        <div class="gauge-title">LTV &amp; Property Tax</div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted)">
+          <span>Loan-to-Value (LTV)</span>
+          <span id="g-ltv" style="font-family:'DM Mono',monospace;color:var(--text)">—</span>
+        </div>
+        <div class="bar-container"><div class="bar-fill" id="g-ltv-bar" style="width:0%"></div></div>
+        <div style="font-size:10px;color:var(--muted);margin-top:4px;font-family:'DM Mono',monospace">PMI required if LTV &gt; 80%</div>
+
+        <div style="margin-top:12px;border-top:1px dashed var(--border);padding-top:10px;">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;">
+            <span id="g-taxlabel" style="font-size:12px;color:var(--text)">—</span>
+            <span id="g-annualtax" style="font-family:'DM Mono',monospace;font-size:13px;color:var(--accent)">—</span>
+          </div>
+          <div id="g-taxnote" style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;line-height:1.4">—</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="timeline-section">
+      <div class="gauge-title">Savings Build-Up Toward Down Payment (<span id="tl-dp-label">—</span> required)</div>
+      <div id="tl-rows"></div>
+      <div style="font-size:10px;color:var(--muted);margin-top:8px;font-family:'DM Mono',monospace">
+        <span style="color:var(--accent)">│</span> = required DP threshold &nbsp;·&nbsp; CO sale proceeds included at all months (assumed sold at close)
+      </div>
+    </div>
+
+    <div class="divider"></div>
+    <div style="font-size:10px;font-family:'DM Mono',monospace;letter-spacing:0.8px;text-transform:uppercase;color:var(--muted);margin-bottom:10px">Assumptions &amp; Notes</div>
+    <div class="notes-grid">
+      <div class="note-item"><strong>Mortgage Rate Context</strong>30yr jumbo avg 6.47% (Mar 23, 2026). With 800/780 scores you may qualify slightly below avg. ARM shows −0.75% initial spread. 15yr shows −0.65% spread.</div>
+      <div class="note-item"><strong>CO Home Value &amp; Payoff</strong>Median on S Blue Creek Rd ~$660K. Balance today: $370,869. $775/mo principal is retired each month — payoff shown updates as you move the "Months Until Close" slider. Selling costs default 8% = ~5.7% commission + 2.3% closing costs.</div>
+      <div class="note-item" id="tax-note"><strong>Property Tax</strong>—</div>
+      <div class="note-item"><strong>HYSA</strong>$12,000 seed + $2,000/mo deposits at 3.2% APY, compounded monthly. Value displayed in sidebar updates with the "Months Until Close" slider. Interest earned (vs. flat deposits) is modest but real — ~$1,200 on a 12-month horizon.</div>
+      <div class="note-item"><strong>Home Insurance</strong>Mill Valley: 0.30% (wildfire zone — separate fire policy likely required). Lake Forest: 0.25% of purchase price.</div>
+      <div class="note-item"><strong>Jumbo Loan</strong>2026 conforming limit: $832,750. Virtually all scenarios here require jumbo. Expect 0.1–0.2% rate premium and tighter underwriting (usually requires 720+ score, ≤43% DTI).</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const CO_PAYOFF_TODAY = 370868.72;
+const CO_PRINCIPAL_PER_MO = 775;
+const FOLEY = 100000;
+const MARKETS = {
+  mv: {
+    name: 'Mill Valley, CA',
+    taxRate: 0.0125,
+    taxNote: 'CA Prop 13: tax assessed at purchase price. ~1.0% base rate + ~0.25% local bonds/assessments ≈ 1.25% all-in at time of purchase.',
+    insMult: 0.003
+  },
+  lf: {
+    name: 'Lake Forest, IL',
+    taxRate: 0.0194,
+    taxNote: 'Lake Forest effective rate: 1.94% — lowest in Lake County. Typical annual bill on a $1M home ≈ $19,400/yr. IL taxes reset annually to market value.',
+    insMult: 0.0025
+  }
+};
+const LOANS = {
+  '30': { label:'30yr Fixed', yrs:30, adj:0 },
+  '15': { label:'15yr Fixed', yrs:15, adj:-0.65 },
+  'arm': { label:'7/1 ARM', yrs:30, adj:-0.75 }
+};
+let mkt = 'mv', loanKey = '30';
+
+function setMarket(k, btn) {
+  mkt = k;
+  document.querySelectorAll('#market-selector .select-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  update();
+}
+function setLoan(k, btn) {
+  loanKey = k;
+  document.querySelectorAll('#loan-selector .select-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  update();
+}
+
+function f(n) { return new Intl.NumberFormat('en-US').format(Math.round(n)); }
+function fp(n,d=1) { return n.toFixed(d) + '%'; }
+function fd(n) { return n < 0 ? `($${f(Math.abs(n))})` : `$${f(n)}`; }
+
+function pmt(P, r, n) {
+  if (r === 0) return P / n;
+  const rm = r / 12;
+  return P * (rm * Math.pow(1+rm, n)) / (Math.pow(1+rm, n) - 1);
+}
+
+// HYSA future value: seed compounding monthly + series of $2K deposits
+// FV = seed*(1+r)^n + dep * [((1+r)^n - 1) / r]  where r = APY/12
+function hysaFV(months) {
+  const SEED = 12000, DEP = 2000, APY = 0.032;
+  const r = APY / 12;
+  const growth = SEED * Math.pow(1 + r, months);
+  const series = DEP * ((Math.pow(1 + r, months) - 1) / r);
+  return growth + series;
+}
+
+function update() {
+  const price = +document.getElementById('sl-price').value;
+  const baseRate = +document.getElementById('sl-rate').value;
+  const dpPct = +document.getElementById('sl-dpPct').value;
+  const coSale = +document.getElementById('sl-cosale').value;
+  const sellPct = +document.getElementById('sl-sellcost').value;
+  const cash = +document.getElementById('sl-savings').value;
+  const monthly = +document.getElementById('sl-monthly').value;
+  const months = +document.getElementById('sl-months').value;
+  const income = +document.getElementById('sl-income').value;
+  const otherDebt = +document.getElementById('sl-debt').value;
+
+  const m = MARKETS[mkt];
+  const l = LOANS[loanKey];
+  const rate = Math.max(1, baseRate + l.adj);
+
+  // HYSA value at close date
+  const hysaVal = hysaFV(months);
+
+  // CO mortgage payoff reduces by $775 principal/mo until sale
+  const saleMoUsed = +document.getElementById('sl-months').value;
+  const coPayoff = Math.max(0, CO_PAYOFF_TODAY - CO_PRINCIPAL_PER_MO * saleMoUsed);
+
+  // Labels
+  document.getElementById('lbl-price').textContent = `$${f(price)}`;
+  document.getElementById('lbl-rate').textContent = `${baseRate.toFixed(2)}% → ${rate.toFixed(2)}%`;
+  document.getElementById('lbl-dpPct').textContent = `${dpPct}%`;
+  document.getElementById('lbl-cosale').textContent = `$${f(coSale)}`;
+  document.getElementById('lbl-sellcost').textContent = `${sellPct.toFixed(1)}%`;
+  document.getElementById('lbl-savings').textContent = `$${f(cash)}`;
+  document.getElementById('lbl-monthly').textContent = `$${f(monthly)}`;
+  document.getElementById('lbl-months').textContent = `${months} mo`;
+  document.getElementById('lbl-income').textContent = `$${f(income)}`;
+  document.getElementById('lbl-debt').textContent = `$${f(otherDebt)}`;
+  document.getElementById('lbl-hysa').textContent = `$${f(hysaVal)}`;
+
+  // Calculations
+  const sellCosts = coSale * sellPct / 100;
+  const coNet = Math.max(0, coSale - sellCosts - coPayoff);
+  const addlSavings = monthly * months;
+  const totalAvail = FOLEY + cash + hysaVal + addlSavings + coNet;
+  const dpAmt = price * dpPct / 100;
+  const loanAmt = price - dpAmt;
+  const buyerClosing = price * 0.03;
+  const reserve = totalAvail - dpAmt - buyerClosing;
+
+  const piMonthly = pmt(loanAmt, rate / 100, l.yrs * 12);
+  const taxMonthly = price * m.taxRate / 12;
+  const insMonthly = price * m.insMult / 12;
+  const pmiMonthly = dpPct < 20 ? loanAmt * 0.006 / 12 : 0;
+  const housingTotal = piMonthly + taxMonthly + insMonthly + pmiMonthly;
+  const totalMonthly = housingTotal + otherDebt;
+
+  const moIncome = income / 12;
+  const feRatio = housingTotal / moIncome * 100;
+  const beRatio = totalMonthly / moIncome * 100;
+  const ltv = loanAmt / price * 100;
+  const leftover = moIncome - totalMonthly;
+
+  // Derived colors — single source of truth, declared before any use
+  const reserveColor = reserve >= 0 ? 'var(--green)' : 'var(--red)';
+  const monthlyColor = feRatio <= 28 ? 'var(--green)' : feRatio <= 36 ? 'var(--yellow)' : 'var(--red)';
+  const dtiColor = beRatio <= 36 ? 'var(--green)' : beRatio <= 43 ? 'var(--yellow)' : 'var(--red)';
+
+  // DP Sources
+  document.getElementById('dp-cash').textContent = `$${f(cash)}`;
+  document.getElementById('dp-hysa').textContent = `$${f(hysaVal)}`;
+  document.getElementById('dp-mo-lbl').textContent = `${months}mo`;
+  document.getElementById('dp-mo-lbl2').textContent = `${months}mo`;
+  document.getElementById('dp-addl').textContent = `$${f(addlSavings)}`;
+  document.getElementById('dp-gross').textContent = `$${f(coSale)}`;
+  document.getElementById('dp-sellcosts').textContent = `($${f(sellCosts)})`;
+  document.getElementById('dp-payoff-amt').textContent = `($${f(coPayoff)})`;
+  document.getElementById('lbl-payoff').textContent = `$${f(coPayoff)}`;
+  document.getElementById('dp-total').textContent = `$${f(totalAvail)}`;
+  document.getElementById('dp-used').textContent = `($${f(dpAmt)})`;
+  document.getElementById('dp-buyercosts').textContent = `($${f(buyerClosing)})`;
+  const resEl = document.getElementById('dp-reserve');
+  resEl.textContent = fd(reserve);
+  resEl.style.color = reserveColor;
+
+  // KPIs
+  document.getElementById('kpi-dp').textContent = `$${f(dpAmt)}`;
+  document.getElementById('kpi-dpSub').textContent = `${dpPct}% of $${f(price)}`;
+  document.getElementById('stripe-dp').style.background = reserveColor;
+
+  document.getElementById('kpi-cash').textContent = fd(reserve);
+  document.getElementById('kpi-cash').style.color = reserveColor;
+  document.getElementById('stripe-cash').style.background = reserveColor;
+
+  document.getElementById('kpi-pi').textContent = `$${f(totalMonthly)}`;
+  document.getElementById('kpi-pi').style.color = monthlyColor;
+  document.getElementById('kpi-piSub').textContent = `P&I $${f(piMonthly)} · tax $${f(taxMonthly)}`;
+  document.getElementById('stripe-pi').style.background = monthlyColor;
+
+  const dtiEl = document.getElementById('kpi-dti');
+  dtiEl.textContent = fp(beRatio);
+  dtiEl.style.color = dtiColor;
+  document.getElementById('stripe-dti').style.background = dtiColor;
+  document.getElementById('kpi-dtiSub').textContent = beRatio <= 28 ? 'Within guideline' : beRatio <= 36 ? 'Manageable' : beRatio <= 43 ? 'Elevated — jumbo max' : 'Exceeds guideline';
+
+  // Monthly breakdown — total row matches tile color
+  document.getElementById('bt-pi').textContent = `$${f(piMonthly)}`;
+  document.getElementById('bt-tax').textContent = `$${f(taxMonthly)}`;
+  document.getElementById('bt-ins').textContent = `$${f(insMonthly)}`;
+  document.getElementById('bt-pmi').textContent = pmiMonthly > 0 ? `$${f(pmiMonthly)}` : '—';
+  document.getElementById('bt-debt').textContent = `$${f(otherDebt)}`;
+  const btTotal = document.getElementById('bt-total');
+  btTotal.textContent = `$${f(totalMonthly)}`;
+  btTotal.style.color = monthlyColor;
+
+  // Gauges
+  const feClass = feRatio <= 28 ? 'safe' : feRatio <= 36 ? 'warn' : 'danger';
+  const beClass = beRatio <= 36 ? 'safe' : beRatio <= 43 ? 'warn' : 'danger';
+  document.getElementById('g-fe').textContent = fp(feRatio);
+  document.getElementById('g-be').textContent = fp(beRatio);
+  document.getElementById('g-fe-bar').style.width = Math.min(100, feRatio * 2.5) + '%';
+  document.getElementById('g-fe-bar').className = 'bar-fill ' + feClass;
+  document.getElementById('g-be-bar').style.width = Math.min(100, beRatio * 2) + '%';
+  document.getElementById('g-be-bar').className = 'bar-fill ' + beClass;
+  document.getElementById('g-leftover').textContent = `$${f(leftover)}/mo`;
+
+  const ltvClass = ltv <= 80 ? 'safe' : ltv <= 90 ? 'warn' : 'danger';
+  document.getElementById('g-ltv').textContent = fp(ltv);
+  document.getElementById('g-ltv-bar').style.width = Math.min(100, ltv) + '%';
+  document.getElementById('g-ltv-bar').className = 'bar-fill ' + ltvClass;
+
+  document.getElementById('g-taxlabel').textContent = `${m.name}: ${fp(m.taxRate * 100)} rate`;
+  document.getElementById('g-annualtax').textContent = `$${f(price * m.taxRate)}/yr`;
+  document.getElementById('g-taxnote').textContent = m.taxNote;
+  document.getElementById('tax-note').innerHTML = `<strong>Property Tax — ${m.name}</strong>${m.taxNote}`;
+
+  // Status badge — same color logic as Reserve row
+  const badge = document.getElementById('status-badge');
+  const badgeText = document.getElementById('status-text');
+  if (reserve >= 0 && beRatio <= 43) {
+    badge.className = 'status-badge ready';
+    badgeText.textContent = `FEASIBLE · $${f(reserve)} cash remaining · ${fp(beRatio)} DTI`;
+  } else if (reserve >= 0 && beRatio > 43) {
+    badge.className = 'status-badge caution';
+    badgeText.textContent = `DTI ELEVATED · ${fp(beRatio)} exceeds 43% jumbo guideline`;
+  } else {
+    badge.className = 'status-badge blocked';
+    badgeText.textContent = `SHORTFALL · $${f(Math.abs(reserve))} short after DP & closing costs`;
+  }
+
+  // Timeline
+  document.getElementById('tl-dp-label').textContent = `$${f(dpAmt)}`;
+  const tlContainer = document.getElementById('tl-rows');
+  tlContainer.innerHTML = '';
+  const maxVal = Math.max(dpAmt * 1.15, FOLEY + cash + hysaFV(36) + monthly * 36 + Math.max(0, coSale * (1 - sellPct/100) - CO_PAYOFF_TODAY));
+  const milestones = [6,12,18,24,30,36];
+  milestones.forEach(mo => {
+    const hysaAtMo = hysaFV(mo);
+    const payoffAtMo = Math.max(0, CO_PAYOFF_TODAY - CO_PRINCIPAL_PER_MO * mo);
+    const coNetAtMo = Math.max(0, coSale - coSale * sellPct / 100 - payoffAtMo);
+    const amt = FOLEY + cash + hysaAtMo + monthly * mo + coNetAtMo;
+    const pct = Math.min(100, amt / maxVal * 100);
+    const dpLinePct = Math.min(100, dpAmt / maxVal * 100);
+    const color = amt >= dpAmt ? 'var(--green)' : amt >= dpAmt * 0.85 ? 'var(--yellow)' : 'var(--red)';
+    const label = mo < 12 ? `${mo}mo` : mo === 12 ? '1yr' : mo === 24 ? '2yr' : mo === 36 ? '3yr' : `${mo}mo`;
+    const row = document.createElement('div');
+    row.className = 'tl-row';
+    row.innerHTML = `
+      <span class="tl-label">${label}</span>
+      <div class="tl-bar-wrap">
+        <div class="tl-bar-fill" style="width:${pct}%;background:${color};border-radius:3px"></div>
+        <div style="position:absolute;top:-2px;bottom:-2px;left:${dpLinePct}%;width:2px;background:var(--accent);opacity:0.85;pointer-events:none;"></div>
+      </div>
+      <span class="tl-val" style="color:${color}">$${f(amt)}</span>`;
+    tlContainer.appendChild(row);
+  });
+}
+
+update();
+</script>
+</body>
+</html>
