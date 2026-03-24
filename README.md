@@ -1,0 +1,1 @@
+# Personal Home Financial Model\n\nThis repository contains the personal home financial model used to track and plan personal finances.
